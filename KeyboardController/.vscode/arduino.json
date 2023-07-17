@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:leonardo",
+    "port": "/dev/ttyACM4",
+    "programmer": "avrispmkii",
+    "sketch": "KeyboardController.ino"
+}
