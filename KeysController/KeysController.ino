@@ -7,30 +7,43 @@
 
 #define SLAVE_ADDR 0x15
 #define SEPARATOR ";"
+
 const int TOTAL_BUTTONS = 5;
 
 typedef struct {
   String value;
   //0 write, 1 press, 2 release, 3 press and release, 4 press and hold
-  int action;
-  int delay_micro_seconds;
-  int times;
+  int action = 0;
+  int delay_micro_seconds =0;
+  int times = 1;
   String to_string(){
     return this->value + SEPARATOR + this->action +SEPARATOR+ this->delay_micro_seconds + SEPARATOR + this->times;
   }
 } Message;
 
+
 typedef struct Button {
-  String button_name;
   int pin;
+  int action;
+  String button_name;
   String value;
+  int last_pressed_state = LOW;
+  bool state_changed(){
+    bool current_state = read();
+    bool changed = current_state != this->last_pressed_state;
+    this->last_pressed_state = current_state;
+    return changed;
+  }
   void initialize(){
     if(this->pin == 0)
       return;
-    pinMode(this->pin, INPUT_PULLUP);
+    pinMode(this->pin, INPUT);
   }
-  bool is_pressed(){
-    return digitalRead(this->pin) == LOW;
+  int read(){
+    return digitalRead(this->pin);
+  }
+  bool in_pressed(){
+    return this->read() == HIGH;
   }
 }Button;
 
@@ -70,21 +83,22 @@ void write_lcd(String message){
   }
 }
 
-Button create_button(String button_name, int pin, String value){
+Button create_button(String button_name, int pin,int action, String value){
   Button button;
   button.button_name = button_name;
   button.pin = pin;
   button.value = value;
+  button.action = action;
   return button;
 }
 
 void prepare_buttons(){
   Serial.println("Preparing buttons");
-  ls_button[0] = create_button("Reboque", 53, "t");
-  ls_button[1] = create_button("Diferencial", 52, "v");
-  ls_button[2] = create_button("Retarder +", 51, "j");
-  ls_button[3] = create_button("Retarder - ", 50, "k");
-  ls_button[4] = create_button("Limpador", 49, "p");
+  ls_button[0] = create_button("Reboque", 53,0, "t");
+  ls_button[1] = create_button("Diferencial", 52,0, "v");
+  ls_button[2] = create_button("Retarder +", 51,0, "j");
+  ls_button[3] = create_button("Retarder - ", 50,0, "k");
+  ls_button[4] = create_button("Limpador", 49,0, "p");
   Serial.println("Buttons prepared");
 }
 void initialize_buttons(){
@@ -102,7 +116,7 @@ void initialize(){
 
 void read_buttons(){
   for(int i = 0; i < TOTAL_BUTTONS; i++){
-    if(ls_button[i].is_pressed()){
+    if(ls_button[i].state_changed()){
       execute_action(ls_button[i]);
       delay(300);
     }
@@ -110,8 +124,9 @@ void read_buttons(){
 }
 
 void execute_action(Button button){
-  Message message = {"", 0, 50, 1};
+  Message message;
   message.value = button.value;
+  message.action = button.action;
   write_lcd(button.button_name + " Ativado");
   Serial.println(message.to_string());
   write_message(message);
