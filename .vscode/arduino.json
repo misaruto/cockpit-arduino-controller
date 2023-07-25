@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:leonardo",
+    "programmer": "avrispmkii",
+    "sketch": "KeyboardController/KeyboardController.ino"
+}
